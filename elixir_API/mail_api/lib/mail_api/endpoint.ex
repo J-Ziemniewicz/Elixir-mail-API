@@ -4,7 +4,8 @@ defmodule MailApi.Endpoint do
   A Plug responsible for logging request info, parsing request body's as JSON,
   matching routes, and dispatching responses.
   """
-
+  import Bamboo.Email
+  use Bamboo.Mailer, otp_app: :mail_api
   use Plug.Router
 
   # This module is a Plug, that also implements it's own plug pipeline, below:
@@ -26,30 +27,42 @@ defmodule MailApi.Endpoint do
     send_resp(conn, 200, "pong!")
   end
 
-  # Handle incoming events, if the payload is the right shape, process the
-  # events, otherwise return an error.
-  post "/events" do
+  post "/mail" do
     {status, body} =
       case conn.body_params do
-        %{"events" => events} -> {200, process_events(events)}
-        _ -> {422, missing_events()}
+        %{"mail" => mail, "sender" => sender, "subject" => subject} ->
+          {200, process_mail(mail, sender, subject)}
+
+        _ ->
+          {422, missing_mail()}
       end
 
     send_resp(conn, status, body)
   end
 
-  defp process_events(events) when is_list(events) do
-    # Do some processing on a list of events
-    Poison.encode!(%{response: "Received Events!"})
+  defp process_mail(mail, sender, email_subject)
+       when is_binary(mail) and is_binary(sender) and sender != "" and mail != "" do
+    IO.puts(:stdio, mail)
+    IO.puts(:stdio, sender)
+
+    new_email(
+      to: "fokzterrier@gmail.com",
+      from: "mbptest4@wp.pl",
+      subject: email_subject,
+      html_body: mail,
+      text_body: mail
+    )
+    |> deliver_later()
+
+    Poison.encode!(%{response: "Received mail!"})
   end
 
-  defp process_events(_) do
-    # If we can't process anything, let them know :)
-    Poison.encode!(%{response: "Please Send Some Events!"})
+  defp process_mail(_, _, _) do
+    Poison.encode!(%{response: "Please Send Some mail!"})
   end
 
-  defp missing_events do
-    Poison.encode!(%{error: "Expected Payload: { 'events': [...] }"})
+  defp missing_mail do
+    Poison.encode!(%{error: "Expected Payload: { 'mail': '...', 'sender': '...'}"})
   end
 
   # A catchall route, 'match' will match no matter the request method,

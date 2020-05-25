@@ -14,7 +14,7 @@ defmodule MailApi.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :plug_cowboy],
+      extra_applications: [:logger, :plug_cowboy, :bamboo, :bamboo_smtp],
       mod: {MailApi.Application, []}
     ]
   end
@@ -23,7 +23,9 @@ defmodule MailApi.MixProject do
   defp deps do
     [
       {:poison, "~> 3.1"},
-      {:plug_cowboy, "~> 2.0"}
+      {:plug_cowboy, "~> 2.0"},
+      {:bamboo, "~> 1.5"},
+      {:bamboo_smtp, "~> 2.1.0"}
     ]
   end
 end
