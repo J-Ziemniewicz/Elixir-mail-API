@@ -1,5 +1,4 @@
 defmodule MailApi.Endpoint do
-  # ./lib/webhook_processor/endpoint.ex
   @moduledoc """
   A Plug responsible for logging request info, parsing request body's as JSON,
   matching routes, and dispatching responses.
@@ -8,23 +7,16 @@ defmodule MailApi.Endpoint do
   use Bamboo.Mailer, otp_app: :mail_api
   use Plug.Router
 
-  # This module is a Plug, that also implements it's own plug pipeline, below:
-
-  # Using Plug.Logger for logging request information
   plug(Plug.Logger)
-  # responsible for matching routes
+
   plug(:match)
-  # Using Poison for JSON decoding
-  # Note, order of plugs is important, by placing this _after_ the 'match' plug,
-  # we will only parse the request AFTER there is a route match.
+
   plug(Plug.Parsers, parsers: [:json], json_decoder: Poison)
-  # responsible for dispatching responses
+
   plug(:dispatch)
 
-  # A simple route to test that the server is up
-  # Note, all routes must return a connection as per the Plug spec.
   get "/ping" do
-    send_resp(conn, 200, "pong!")
+    send_resp(conn, 200, "Mail API is working...")
   end
 
   post "/mail" do
@@ -49,25 +41,28 @@ defmodule MailApi.Endpoint do
       to: "fokzterrier@gmail.com",
       from: "mbptest4@wp.pl",
       subject: email_subject,
-      html_body: mail,
+      html_body: "<strong>Mail od " <> sender <> "</strong>" <> "<p>" <> mail <> "</p>",
       text_body: mail
     )
     |> deliver_later()
 
-    Poison.encode!(%{response: "Received mail!"})
+    Poison.encode!(%{response: "Message send!"})
   end
 
   defp process_mail(_, _, _) do
-    Poison.encode!(%{response: "Please Send Some mail!"})
+    Poison.encode!(%{
+      response:
+        "Please enter all required information! Expected Payload: { 'mail': '...', ; 'subject': '...', 'sender': '...'}"
+    })
   end
 
   defp missing_mail do
-    Poison.encode!(%{error: "Expected Payload: { 'mail': '...', 'sender': '...'}"})
+    Poison.encode!(%{
+      error: "Expected Payload: { 'mail': '...', ; 'subject': '...', 'sender': '...'}"
+    })
   end
 
-  # A catchall route, 'match' will match no matter the request method,
-  # so a response is always returned, even if there is no route to match.
   match _ do
-    send_resp(conn, 404, "oops... Nothing here :(")
+    send_resp(conn, 404, "Wrong adress")
   end
 end
